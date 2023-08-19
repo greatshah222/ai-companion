@@ -1,5 +1,5 @@
 import prismadb from "@/lib/prismadb";
-import { currentUser } from "@clerk/nextjs";
+import { auth, currentUser } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
 
 export const PATCH = async (
@@ -57,6 +57,39 @@ export const PATCH = async (
 		return NextResponse.json(companion);
 	} catch (error: any) {
 		console.log("[COMPANION_PATCH]", error);
+		return new NextResponse("Internal Error", {
+			status: 500,
+		});
+	}
+};
+
+export const DELETE = async (
+	req: Request,
+	{
+		params,
+	}: {
+		params: {
+			companionId: string;
+		};
+	}
+) => {
+	try {
+		const { userId } = auth();
+
+		if (!userId) {
+			return new NextResponse("unauthorized", { status: 401 });
+		}
+
+		const companion = await prismadb.companion.delete({
+			where: {
+				userId, // can only be deleted by userId who created it
+				id: params.companionId,
+			},
+		});
+
+		return NextResponse.json(companion);
+	} catch (error: any) {
+		console.log("[COMPANION_DELETE]", error);
 		return new NextResponse("Internal Error", {
 			status: 500,
 		});
